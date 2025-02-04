@@ -1,0 +1,442 @@
+<!doctype html>
+<html lang="it">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Come creare un server mail con mailcow</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap"
+            rel="stylesheet"
+        />
+        <link
+            rel="stylesheet"
+            as="style"
+            crossorigin
+            href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css"
+        />
+        <link
+            rel="stylesheet"
+            href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&icon_names=play_circle"
+        />
+
+        <style>
+            @supports (background-color: AccentColor) {
+                :root {
+                    --accent-color: AccentColor;
+                    --accent-color-fg: AccentColorText;
+                }
+            }
+
+            @supports not (background-color: AccentColor) {
+                :root {
+                    --accent-color: rgb(255, 102, 0);
+                    --accent-color-fg: white;
+                }
+            }
+
+            :root {
+                color-scheme: light dark;
+                font-family: "Pretendard", sans-serif;
+                cursor: default;
+            }
+
+            body {
+                width: clamp(45ch, 50%, 75ch);
+                margin: 0px auto;
+                padding: 8px;
+            }
+
+            footer {
+                margin-top: 5rem;
+                color: GrayText;
+            }
+
+            code,
+            output,
+            var {
+                user-select: all;
+                font-family: "JetBrains Mono", monospace;
+                font-size: small;
+                background-color: ButtonFace;
+                border-radius: 6px;
+                padding-inline: 0.3rem;
+
+                &.cli,
+                &.file-contents {
+                    padding: 0.5rem;
+
+                    &.cli {
+                        &::before {
+                            content: "$ ";
+                        }
+
+                        &.root::before {
+                            content: "# ";
+                        }
+                    }
+                }
+            }
+
+            output::before {
+                content: "> " !important;
+            }
+
+            p.cli-multiple {
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+
+                > * {
+                    width: fit-content;
+                }
+            }
+
+            a {
+                color: LinkText;
+            }
+
+            div.alert {
+                border-left: 1px solid var(--alert-color);
+                padding-left: 1rem;
+
+                &.warning {
+                    --alert-color: rgb(253, 168, 55);
+
+                    &::before {
+                        color: var(--alert-color);
+                        font-weight: bold;
+                        content: "⚠ Attenzione";
+                    }
+                }
+
+                &.info {
+                    --alert-color: rgb(55, 157, 253);
+
+                    &::before {
+                        color: var(--alert-color);
+                        font-weight: bold;
+                        content: "🛈 Info";
+                    }
+                }
+            }
+
+            button {
+                background-color: var(--accent-color);
+                color: var(--accent-color-fg);
+                border: 0px;
+                padding: 0.5rem;
+                border-radius: 5px;
+                font-family: "Pretendard";
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                vertical-align: middle;
+
+                &:hover {
+                    cursor: pointer;
+                }
+
+                &.play::after {
+                    font-family: "Material Symbols Rounded";
+                    font-size: large;
+                    content: "\e1c4";
+
+                    text-indent: 0.2rem;
+                }
+            }
+
+            #player {
+                width: 100%;
+            }
+        </style>
+    </head>
+
+    <body>
+        <h1>Come creare un server mail con mailcow</h1>
+        <p>
+            <details>
+                <summary>Indice</summary>
+                <ol id="toc"></ol>
+            </details>
+        </p>
+
+        <div class="alert info">
+            Cliccando una sola volta sul codice in automatico verrà evidenziato
+            tutto ciò che c'è da copiare!
+        </div>
+
+        <section>
+            <h2 id="virtual-machine">Macchina virtuale</h2>
+            <h3>Creare e configurare una macchina virtuale con Ubuntu 20.04</h3>
+            <ol>
+                <li>Aprire l'interfaccia web di VMWare ESXi</li>
+                <li>Creare una nuova macchina</li>
+                <li>
+                    Assegnare risorse adeguate (es. 4096MiB di RAM, 40GiB di
+                    spazio su disco fisso)
+                </li>
+                <li>Selezionare l'ISO di Ubuntu dallo storage delle ISO</li>
+            </ol>
+            <h3>Installare Ubuntu</h3>
+            <ol>
+                <li>Far partire la macchina virtuale</li>
+                <li>
+                    Seguire le istruzioni a video, senza installare software
+                    aggiuntivo se richiesto
+                </li>
+                <li>
+                    Al momento opportuno (configurazione delle interfaccie di
+                    rete) disattivare l'impostazione con DHCP e inserire i
+                    parametri indicati dal responsabile della rete
+                </li>
+                <li>
+                    Configurare OpenSSH (installarlo quando richiesto e
+                    permettere l'accesso con username)
+                </li>
+                <li>Riavviare</li>
+            </ol>
+
+            <h3>Accedere via SSH</h3>
+            <button class="play" data-timestamp="5">
+                Fai partire il video da questo punto
+            </button>
+            <p>
+                A questo punto possiamo accedere con Putty via SSH. Inserire i
+                seguenti dati:
+            </p>
+            <ul>
+                <li>Indirizzo IP precedentemente configurato</li>
+                <li>Porta 22</li>
+            </ul>
+            <p>
+                e schiacciare "Open". Inserire poi utente e password configurati
+                nel SO
+            </p>
+
+            <h3>Aggiornare le repository</h3>
+            <button class="play" data-timestamp="50">
+                Fai partire il video da questo punto
+            </button>
+            <p>
+                Dobbiamo rimuovere la repository del CD di installazione,
+                altrimenti il sistema operativo proverà a cercare i nuovi
+                pacchetti da installare anche lì.
+            </p>
+            <a
+                href="https://askubuntu.com/questions/42441/how-do-remove-the-cd-dvd-install-as-a-source-for-apt-get-packages-when-install"
+                >Link alla question su AskUbuntu</a
+            >
+            <p>Eseguire i seguenti comandi CLI</p>
+            <code class="cli">sudo nano /etc/apt/sources.list</code>
+            <p>
+                nell'interfaccia che si apre aggiungere un cancelletto
+                <code>#</code> davanti alla riga che si riferisce al CD
+                (contiene la scritta <code>cdrom</code>).
+            </p>
+        </section>
+
+        <section>
+            <h2 id="mailcow">Installare mailcow (versione dockerized)</h2>
+            <a href="https://docs.mailcow.email/getstarted/install/"
+                >Guida ufficiale</a
+            >
+            <h3>Installare Docker</h3>
+            <button class="play" data-timestamp="69">
+                Fai partire il video da questo punto
+            </button>
+            <p>
+                Docker è un software che permette di creare e gestire
+                <code>container</code>, ovvero sistemi virtualizzati solo
+                "sopra" il kernel, che non devono emulare tutta la macchina a
+                partire dall'hardware.
+            </p>
+            <p>
+                Mailcow usa Docker per permettere una gestione più facile delle
+                dipendenze del software, dato che un software mail è molto
+                complesso e necessita di molti altri software alla base per
+                funzionare. Gestire tutte le dipendenze manualmente sarebbe
+                molto laborioso.
+            </p>
+            <p>Eseguire i seguenti comandi:</p>
+            <p class="cli-multiple">
+                Installiamo Docker
+                <code class="cli"
+                    >curl -sSL https://get.docker.com/ | CHANNEL=stable sh</code
+                >
+                e abilitiamolo subito e a ogni riavvio
+                <code class="cli">systemctl enable --now docker</code>
+            </p>
+            <p>
+                A questo punto possiamo iniziare a usare Docker. Prima però
+                installiamo un plugin, "Docker Compose", che ci permetterà di
+                "orchestrare" i vari container e gestirli assieme. Mailcow
+                infatti funziona con più container autonomi che comunicano tra
+                loro via socket appositi.
+            </p>
+            <p class="cli-multiple">
+                <code class="cli">apt update</code>
+                <code class="cli">apt install docker-compose-plugin</code>
+            </p>
+        </section>
+        <section>
+            <h2 id="mailcow-config">Configurare mailcow</h2>
+            <p>
+                Da questo momento in poi opereremo in modalità root (anche detta
+                amministratore o superuser)
+            </p>
+            <code class="cli">su</code>
+            <p>
+                Così entriamo in modalità amministratore (nei comandi è
+                contrassegnata, come da convenzione, con un cancelletto)
+            </p>
+            <code class="cli root">umask</code>
+            <p>
+                Verifichiamo che l'output sia <var>0022</var> per controllare di
+                avere i permessi giusti
+            </p>
+            <output class="cli">0022</output>
+            <p>
+                Entriamo nella cartella designata per l'installazione di
+                software utente
+            </p>
+            <code class="cli root">cd /opt</code>
+            <p>
+                Cloniamo la repository contenente il codice di Mailcow
+                (scarichiamo il sorgente del programma)
+            </p>
+            <code class="cli root"
+                >git clone https://github.com/mailcow/mailcow-dockerized</code
+            >
+            <p>Entriamo nella cartella dove è stato scaricato</p>
+            <code class="cli root">cd mailcow-dockerized</code>
+            <p>Creiamo la configurazione di base del software</p>
+            <p>
+                <button class="play" data-timestamp="95">
+                    Fai partire il video da questo punto
+                </button>
+            </p>
+            <code class="cli root">./generate_config.sh</code>
+            <p>
+                Quando verrà chiesto a schermo dovremo inserire un Fully
+                Qualified Domain Name per accedere poi al server
+            </p>
+            <p>Infine, facciamo partire con Docker tutta l'infrastruttura</p>
+            <p class="cli-multiple">
+                <code class="cli root">docker compose pull</code>
+                <code class="cli root">docker compose up -d</code>
+            </p>
+            <p>Ora Mailcow è partito e pronto per essere usato!</p>
+        </section>
+        <section>
+            <h2 id="mailcow-remote-config">
+                Accesso al server Mailcow da un altra macchina e configurazione
+                finale
+            </h2>
+            <p>
+                Ora, per completare la configurazione, accediamo a Mailcow
+                attraverso l'IP del server da un'altra macchina
+            </p>
+            <p>
+                Inseriamo l'IP su un qualsiasi browser e accediamo con le
+                credenziali <code>admin</code> (come utente) e
+                <code>moohoo</code> (come password)
+            </p>
+            <div class="alert warning">
+                <p>
+                    Bisogna accedere con HTTP, controllare che l'URL specifichi
+                    il protocollo giusto (non HTTPS)
+                </p>
+                <p>
+                    In alternativa, accedendo con HTTPS, bisogna impostare il
+                    sistema in modo che si fidi dei nostri certificati
+                    self-signed, ma non essendo necessario tralasciamo questo
+                    passaggio
+                </p>
+            </div>
+            <p>
+                A questo punto possiamo seguire il video tutorial (che copre
+                comunque anche le parti precedenti) in quanto spiegare
+                testualmente la parte di configurazione attraverso la GUI web
+                sarebbe tedioso e il risultato sarebbe difficle da seguire.
+            </p>
+            <button class="play" data-timestamp="150">
+                Fai partire il video da questo punto
+            </button>
+        </section>
+        <section>
+            <h2 id="windows-dns-config">
+                Configurare file degli host di Windows
+            </h2>
+            <div class="alert warning">
+                Questa parte è riportata anche testualmente per avere una
+                maggiore chiarezza rispetto a cosa va inserito nel file da
+                modificare
+            </div>
+            <p>
+                Ora dobbiamo configurare Windows in modo che mandi le richieste
+                relative al FQDN scelto prima direttamente all'IP della macchina
+                virtuale senza che ci sia un server DNS che risolve
+                effettivamente il nome del dominio
+            </p>
+            <p>
+                Apriamo il file
+                <code>C:\Windows\System32\Drivers\etc\hosts</code>
+            </p>
+            <p>Inseriamo il seguente testo in coda:</p>
+            <code class="file-contents"
+                >192.168.1.1 fqdn.scelto.prima.in.configurazione</code
+            >
+            <p>
+                dove al posto di <code>192.168.1.1</code> bisogna sostituire
+                l'IP della macchina virtuale e al posto di
+                <code>fqdn.scelto.prima.in.configurazione</code> l'FQDN con il
+                quale si vuole accedere al server.
+            </p>
+            <p>
+                Inoltre inseriamo anche un'altra riga identica ma al posto
+                dell'FQDN per accedere al server inseriamo quello che sarà il
+                dominio della mail (la parte dopo la chiocciola, @).
+            </p>
+        </section>
+        <section>
+            <h2 id="video">Video</h2>
+            <video src="video.mp4" controls id="player"></video>
+        </section>
+
+        <footer>
+            <small>&tilde; by gruppo job 5BIA</small>
+        </footer>
+
+        <script>
+            // Genera l'indice (Table of Contents/TOC)
+            const toc = document.getElementById("toc");
+            const headers = [
+                document.getElementsByTagName("h2"),
+                document.getElementsByTagName("h3"),
+            ];
+            for (const h2 of headers[0]) {
+                const el = document.createElement("li");
+                const a = document.createElement("a");
+                a.textContent = h2.textContent;
+                a.href = `#${h2.id}`;
+                el.appendChild(a);
+                toc.append(el);
+            }
+        </script>
+    </body>
+
+    <script>
+        const player = document.getElementById("player");
+        const play_btns = document.getElementsByClassName("play");
+        for (const btn of Array.from(play_btns)) {
+            btn.addEventListener("click", function () {
+                event.preventDefault();
+                player.currentTime = this.getAttribute("data-timestamp");
+                player.scrollIntoView({ behavior: "smooth", block: "center" });
+                player.play();
+            });
+        }
+    </script>
+</html>
